@@ -19,19 +19,37 @@ class MariaDbDataSource extends DataSource {
 
   @override
   Future<List<List>> execute(
-      String tableName, String query, Map<String, dynamic> substitutionValues,
+      String tableName, String sql, Map<String, dynamic> substitutionValues,
       [List<String> returningFields = const []]) async {
-    var params = _sortedValues(query, substitutionValues);
+    var params = _sortedValues(sql, substitutionValues);
 
     for (var name in substitutionValues.keys) {
-      query = query.replaceAll('@$name', '?');
+      if (substitutionValues[name] is List) {
+        // expand List, for example : id IN @idList => id IN (?,?,?)
+        var list = substitutionValues[name] as List;
+        var q = List.filled(list.length, '?', growable: false).join(',');
+        sql = sql.replaceAll('@$name', '($q)');
+      } else {
+        sql = sql.replaceAll('@$name', '?');
+      }
     }
 
-    logger.fine('query: $query');
-    logger.fine('params: $params');
-    var results = await _connection.query(query, params);
-    logger.fine('=== inserted with id: ${results.insertId}');
+    var params2 = [];
+    for (var p in params) {
+      if (p is List) {
+        // expand params for List
+        var list = p as List;
+        params2.addAll(list);
+      } else {
+        params2.add(p);
+      }
+    }
+
+    logger.fine('query: $sql');
+    logger.fine('params: $params2');
+    var results = await _connection.query(sql, params2);
     if (results.insertId != null) {
+      logger.fine('=== inserted with id: ${results.insertId}');
       return [
         [results.insertId]
       ];
@@ -42,14 +60,14 @@ class MariaDbDataSource extends DataSource {
   static List<dynamic> _sortedValues(
       String query, Map<String, dynamic> substitutionValues) {
     List<_Position> positions = [];
-    substitutionValues.keys.forEach((name) {
+    for (var name in substitutionValues.keys) {
       for (var start = 0;
           start < query.length &&
-              (start = query.indexOf('@' + name, start)) != -1;
+              (start = query.indexOf('@$name', start)) != -1;
           start++) {
         positions.add(_Position(name, start));
       }
-    });
+    }
     positions.sort((a, b) => a.position.compareTo(b.position));
     return positions.map((p) => substitutionValues[p.name]).toList();
   }
