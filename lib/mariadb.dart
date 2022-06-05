@@ -45,15 +45,13 @@ class MariaDbDataSource extends DataSource {
       }
     }
 
+    if (returningFields.isNotEmpty) {
+      sql += ' RETURNING ${returningFields.join(',')}';
+    }
+
     logger.fine('query: $sql');
     logger.fine('params: $params2');
     var results = await _connection.query(sql, params2);
-    if (results.insertId != null) {
-      logger.fine('=== inserted with id: ${results.insertId}');
-      return [
-        [results.insertId]
-      ];
-    }
     return results.map((r) => r.toList()).toList();
   }
 
@@ -97,12 +95,3 @@ class _Position {
   final int position;
   _Position(this.name, this.position);
 }
-
-/* 
-void main(List<String> args) {
-  var values = MariaDbDataSource._sortedValues(
-      'select * from user where email=@email and name=@name and email2=@email and age=@age and user_name=@name',
-      {'name': "ABC", 'age': 18, 'email': 'abc@abc.com'});
-  print(values);
-}
- */
