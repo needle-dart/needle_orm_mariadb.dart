@@ -4,12 +4,12 @@ import 'package:logging/logging.dart';
 import 'package:mysql1/mysql1.dart';
 import 'package:needle_orm/needle_orm.dart';
 
-class MariaDbDataSource extends Database {
+class MariaDbDatabase extends Database {
   late Logger logger;
 
   final MySqlConnection _connection;
 
-  MariaDbDataSource(this._connection, {Logger? logger})
+  MariaDbDatabase(this._connection, {Logger? logger})
       : super(DatabaseType.MariaDB, '10.0') {
     this.logger = logger ?? Logger('MariaDbDatabase');
   }
@@ -79,7 +79,7 @@ class MariaDbDataSource extends Database {
       var conn = ctx as MySqlConnection;
       try {
         logger.fine('Entering transaction');
-        var tx = MariaDbDataSource(conn, logger: logger);
+        var tx = MariaDbDatabase(conn, logger: logger);
         return await f(tx);
       } catch (e) {
         logger.severe('Failed to run transaction', e);

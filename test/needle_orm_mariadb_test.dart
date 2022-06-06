@@ -18,7 +18,7 @@ void main() {
         password: 'needle',
         db: 'needle');
     var conn = await MySqlConnection.connect(settings);
-    var ds = MariaDbDataSource(conn);
+    var ds = MariaDbDatabase(conn);
 
     var list = await ds.query("select * from books where id in @idList", {
       'idList': [1, 16]
