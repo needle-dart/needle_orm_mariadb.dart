@@ -20,8 +20,7 @@ void main() {
     var conn = await MySqlConnection.connect(settings);
     var ds = MariaDbDataSource(conn);
 
-    var list =
-        await ds.execute('books', "select * from books where id in @idList", {
+    var list = await ds.query("select * from books where id in @idList", {
       'idList': [1, 16]
     });
     list.forEach((book) {

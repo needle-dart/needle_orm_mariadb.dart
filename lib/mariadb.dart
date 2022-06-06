@@ -13,14 +13,14 @@ class MariaDbDataSource extends DataSource {
     this.logger = logger ?? Logger('MariaDbDataSource');
   }
 
+  @override
   Future<void> close() {
     return _connection.close();
   }
 
   @override
-  Future<List<List>> execute(
-      String tableName, String sql, Map<String, dynamic> substitutionValues,
-      [List<String> returningFields = const []]) async {
+  Future<List<List>> query(String sql, Map<String, dynamic> substitutionValues,
+      {List<String> returningFields = const [], String? tableName}) async {
     var params = _sortedValues(sql, substitutionValues);
 
     for (var name in substitutionValues.keys) {
