@@ -40,8 +40,7 @@ class MariaDbDatabase extends Database {
     for (var p in params) {
       if (p is List) {
         // expand params for List
-        var list = p as List;
-        params2.addAll(list);
+        params2.addAll(p);
       } else {
         params2.add(p);
       }
@@ -51,8 +50,7 @@ class MariaDbDatabase extends Database {
       sql += ' RETURNING ${returningFields.join(',')}';
     }
 
-    logger.fine('query: $sql');
-    logger.fine('params: $params2');
+    logger.config('query: $sql ; params: $params2');
     var results = await _connection.query(sql, params2);
     return MariaDbQueryResult(results);
     // return results.map((r) => r.toList()).toList();
@@ -78,14 +76,14 @@ class MariaDbDatabase extends Database {
     T? returnValue = await _connection.transaction((ctx) async {
       var conn = ctx as MySqlConnection;
       try {
-        logger.fine('Entering transaction');
+        logger.config('Entering transaction');
         var tx = MariaDbDatabase(conn, logger: logger);
         return await f(tx);
       } catch (e) {
         logger.severe('Failed to run transaction', e);
         rethrow;
       } finally {
-        logger.fine('Exiting transaction');
+        logger.config('Exiting transaction');
       }
     });
 
