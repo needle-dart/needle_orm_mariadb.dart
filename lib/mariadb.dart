@@ -8,6 +8,8 @@ class MariaDbDatabase extends Database {
   late Logger logger;
 
   final MySqlConnection _connection;
+  // final dynamic
+  // _connection; // connection can be of type MySqlConnection / TransactionContext
 
   MariaDbDatabase(this._connection, {Logger? logger})
       : super(DatabaseType.MariaDB, '10.0') {
@@ -36,11 +38,11 @@ class MariaDbDatabase extends Database {
       }
     }
 
-    var params2 = [];
+    var params2 = <Object>[];
     for (var p in params) {
       if (p is List) {
         // expand params for List
-        params2.addAll(p);
+        params2.addAll([...p]);
       } else {
         params2.add(p);
       }
@@ -51,8 +53,16 @@ class MariaDbDatabase extends Database {
     }
 
     logger.config('query: $sql ; params: $params2');
-    var results = await _connection.query(sql, params2);
-    return MariaDbQueryResult(results);
+    try {
+      var results = await _connection.query(sql, params2);
+      logger.config('query return');
+      return MariaDbQueryResult(results);
+    } catch (e, s) {
+      logger.severe('query error', e, s);
+      rethrow;
+    } finally {
+      logger.config('query end!');
+    }
     // return results.map((r) => r.toList()).toList();
   }
 
@@ -72,15 +82,14 @@ class MariaDbDatabase extends Database {
   }
 
   @override
-  Future<T> transaction<T>(FutureOr<T> Function(Database) f) async {
+/*   Future<T> transaction<T>(FutureOr<T> Function(Database) f) async {
     T? returnValue = await _connection.transaction((ctx) async {
-      var conn = ctx as MySqlConnection;
       try {
         logger.config('Entering transaction');
-        var tx = MariaDbDatabase(conn, logger: logger);
+        var tx = MariaDbDatabase(ctx, logger: logger);
         return await f(tx);
-      } catch (e) {
-        logger.severe('Failed to run transaction', e);
+      } catch (e, s) {
+        logger.severe('Failed to run transaction', e, s);
         rethrow;
       } finally {
         logger.config('Exiting transaction');
@@ -88,6 +97,22 @@ class MariaDbDatabase extends Database {
     });
 
     return returnValue!;
+  }
+ */
+  Future<T> transaction<T>(FutureOr<T> Function(Database) f) async {
+    await _connection.query('start transaction');
+    T result;
+    try {
+      result = await f(this);
+      await _connection.query('commit');
+    } catch (e, s) {
+      logger.severe('transaction error', e, s);
+      await _connection.query('rollback');
+      rethrow;
+    } finally {
+      logger.info('transaction end');
+    }
+    return result;
   }
 }
 
