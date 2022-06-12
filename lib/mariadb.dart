@@ -130,7 +130,8 @@ class MariaDbQueryResult extends DbQueryResult with ListMixin<List> {
 
   @override
   int get length => _result.length;
-  void set length(int) {
+  @override
+  set length(int value) {
     throw UnimplementedError();
   }
 
@@ -157,8 +158,10 @@ class MariaDbColumnDescription extends DbColumnDescription {
   MariaDbColumnDescription(this.desc);
 
   /// The name of the column returned by the query.
+  @override
   String get columnName => desc.name ?? '';
 
   /// The resolved name of the referenced table.
+  @override
   String get tableName => desc.table ?? '';
 }
